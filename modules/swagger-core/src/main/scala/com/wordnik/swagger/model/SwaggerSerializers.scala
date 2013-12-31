@@ -310,20 +310,47 @@ object SwaggerSerializers extends Serializers {
   class JsonSchemaModelRefSerializer extends CustomSerializer[ModelRef](formats => ({
     case json =>
       implicit val fmts: Formats = formats
+      
+      val output = new ListBuffer[String]
+      (json \ "enum") match {
+        case JArray(entries) => entries.map {
+          case e: JInt => output += e.num.toString
+          case e: JBool => output += e.value.toString
+          case e: JString => output += e.s
+          case e: JDouble => output += e.num.toString
+          case _ =>
+        }
+        case _ =>
+      }
+
+      val allowableValues = {
+        if (output.size > 0) AllowableListValues(output.toList)
+        else (json \ "allowableValues").extract[AllowableValues]
+      }
+      
       ModelRef(
-        (json \ "type").extractOrElse(null: String),
-        (json \ "$ref").extractOpt[String]
+        `type` = (json \ "type").extractOrElse(null: String),
+        ref = (json \ "$ref").extractOpt[String],
+        allowableValues = allowableValues
       )
     }, {
       case x: ModelRef =>
       implicit val fmts = formats
-      ("type" -> {
+      val output = ("type" -> {
         x.`type` match {
           case e:String => Some(e)
           case _ => None
         }
       }) ~
-      ("$ref" -> x.ref)
+      ("$ref" -> x.ref) 
+      
+      x.allowableValues match {
+        case AllowableListValues(values, "LIST") => 
+          output ~ ("enum" -> Extraction.decompose(values))
+        case AllowableRangeValues(min, max)  => 
+          output ~ ("minimum" -> min) ~ ("maximum" -> max)
+        case _ => output
+      }
     }
   ))
 
@@ -864,8 +891,9 @@ trait Serializers {
     case json =>
       implicit val fmts: Formats = formats
       ModelRef(
-        (json \ "type").extractOrElse(null: String),
-        (json \ "$ref").extractOpt[String]
+        `type` = (json \ "type").extractOrElse(null: String),
+        ref = (json \ "$ref").extractOpt[String],
+        allowableValues = (json \ "allowableValues").extract[AllowableValues]
       )
     }, {
       case x: ModelRef =>
@@ -876,7 +904,14 @@ trait Serializers {
           case _ => None
         }
       }) ~
-      ("$ref" -> x.ref)
+      ("$ref" -> x.ref) ~
+      ("allowableValues" -> {
+        x.allowableValues match {
+          case AnyAllowableValues => JNothing // don't serialize when not a concrete type
+          case e:AllowableValues => Extraction.decompose(x.allowableValues)
+          case _ => JNothing
+        }
+      })
     }
   ))
 

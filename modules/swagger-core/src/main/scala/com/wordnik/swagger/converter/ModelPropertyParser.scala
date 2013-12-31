@@ -150,7 +150,14 @@ class ModelPropertyParser(cls: Class[_]) (implicit properties: LinkedHashMap[Str
                 }
                 simpleName = containerType
                 if(isComplex(simpleTypeRef)) {
-                  Some(ModelRef(null, Some(simpleTypeRef), Some(basePart)))
+                  val itemsClass = getElementClass(genericReturnType, returnType)
+                  var itemsAllowableValues = {
+                    if (itemsClass != null && itemsClass.isEnum) 
+                      Some(AllowableListValues((for(v <- itemsClass.getEnumConstants) yield v.toString).toList))
+                    else
+                      None
+                  }
+                  Some(ModelRef(null, Some(simpleTypeRef), Some(basePart), itemsAllowableValues.getOrElse(AnyAllowableValues)))
                 }
                 else Some(ModelRef(simpleTypeRef, None, Some(basePart)))
               }
@@ -374,6 +381,23 @@ class ModelPropertyParser(cls: Class[_]) (implicit properties: LinkedHashMap[Str
         }
       }
     }
+  }
+  
+  def getElementClass(genericReturnType: Type, returnType: Type): Class[_] = {
+    val elementType: Type = {
+      if (TypeUtil.isParameterizedList(genericReturnType) || TypeUtil.isParameterizedSet(genericReturnType)) 
+        genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType].getActualTypeArguments.head
+      else if (TypeUtil.isParameterizedMap(genericReturnType)) 
+        genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType].getActualTypeArguments()(1)
+      else if (!returnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl]) && returnType.isInstanceOf[Class[_]] && returnType.asInstanceOf[Class[_]].isArray) 
+        returnType.asInstanceOf[Class[_]].getComponentType
+      else 
+        null
+    }
+    if (elementType != null && elementType.isInstanceOf[Class[_]]) 
+      elementType.asInstanceOf[Class[_]]
+    else
+      null
   }
 
   def readName(hostClass: Class[_], isSimple: Boolean = true): String = {
