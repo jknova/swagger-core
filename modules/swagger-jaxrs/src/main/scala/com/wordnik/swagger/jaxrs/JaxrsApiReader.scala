@@ -254,10 +254,6 @@ trait JaxrsApiReader extends ClassReader with ClassReaderUtils {
             field.getAnnotation(classOf[ApiParam]) != null) { 
             val param = new MutableParameter
             param.dataType = field.getType.getName
-            Option (field.getAnnotation(classOf[ApiParam])) match {
-              case Some(annotation) => toAllowableValues(annotation.allowableValues)
-              case _ =>
-            }
             if (field.getType.isEnum) {
               param.allowableValues = AllowableListValues((for(v <- field.getType.getEnumConstants) yield v.toString).toList)
             }
