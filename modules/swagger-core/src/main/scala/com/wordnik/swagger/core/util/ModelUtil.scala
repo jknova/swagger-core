@@ -72,9 +72,14 @@ object ModelUtil {
         case None => typeInfo._2
       }
     }
-    val normalized = SwaggerTypes(baseType) match {
+    var normalized = SwaggerTypes(baseType) match {
       case "object" => baseType
       case e: String => e
+    }
+    // If it still has a package at this point (e.g. it's an enum, so the model is not included
+    // in the API description), trim it.
+    if (normalized.lastIndexOf('.') > -1) {
+      normalized = normalized.substring(normalized.lastIndexOf('.')+1)
     }
     // put back in container
     typeInfo._1 match {

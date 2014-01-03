@@ -124,6 +124,9 @@ trait JaxrsApiReader extends ClassReader with ClassReaderUtils {
       if(annotations.length > 0) {
         val param = new MutableParameter
         param.dataType = processDataType(paramType, genericParamType)
+        if (paramType.isEnum) {
+          param.allowableValues = AllowableListValues((for(v <- paramType.getEnumConstants) yield v.toString).toList)
+        }
         processParamAnnotations(param, annotations)
       }
       else if(paramTypes.size > 0) {
@@ -255,6 +258,9 @@ trait JaxrsApiReader extends ClassReader with ClassReaderUtils {
               case Some(annotation) => toAllowableValues(annotation.allowableValues)
               case _ =>
             }
+            if (field.getType.isEnum) {
+              param.allowableValues = AllowableListValues((for(v <- field.getType.getEnumConstants) yield v.toString).toList)
+            }
             val annotations = field.getAnnotations
             processParamAnnotations(param, annotations)
           }
@@ -337,11 +343,13 @@ trait JaxrsApiReader extends ClassReader with ClassReaderUtils {
     param.description = Option(readString(annotation.value))
     param.defaultValue = Option(readString(annotation.defaultValue))
 
-    try {
-      param.allowableValues = toAllowableValues(annotation.allowableValues)
-    } catch {
-      case e: Exception =>
-        LOGGER.error("Allowable values annotation problem in method for parameter " + param.name)
+    if (annotation.allowableValues != null && !annotation.allowableValues.isEmpty()) {
+      try {
+        param.allowableValues = toAllowableValues(annotation.allowableValues)
+      } catch {
+        case e: Exception =>
+          LOGGER.error("Allowable values annotation problem in method for parameter " + param.name)
+      }
     }
     param.required = annotation.required
     param.allowMultiple = annotation.allowMultiple
