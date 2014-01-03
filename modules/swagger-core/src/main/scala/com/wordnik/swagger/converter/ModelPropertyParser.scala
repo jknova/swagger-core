@@ -138,8 +138,8 @@ class ModelPropertyParser(cls: Class[_]) (implicit properties: LinkedHashMap[Str
         if(!excludedFieldTypes.contains(paramType)) {
           val items = {
             // Note that this regex will not match maps (since it does not allow for commas inside the square brackets).
-            // In the long run, that's probably okay. The natural JSON schema representation for a map is a JSON object, which
-            // does not require the 'items' keyword. We should eventually use the JSON schema 'additionalProperties' keyword intead.
+            // Not sure if we want to use the 'items' keyword for maps, anyway. In JSON schema, the 'items' keyword is only
+            // used with arrays. For maps, the appropriate keyword to use is probably 'additionalProperties'. 
             val ComplexTypeMatcher = "([a-zA-Z]*)\\[([a-zA-Z\\.\\-0-9_]*)\\].*".r
             paramType match {
               case ComplexTypeMatcher(containerType, basePart) => {
