@@ -45,6 +45,22 @@ object ModelInheritenceUtil {
         else {
           LOGGER.debug("skipping " + typeRef)
         }
+        /* 
+         * The intent of this commented-out code is to remove model properties that are inherited from 
+         * the base model.
+         * 
+         * However, the code is incorrect -- it checks all base models, not just the one for the
+         * current model.
+         * 
+         * In addition, the code usually does not have any effect, since the current model will 
+         * typically be added as a dependent model in the loop above. The dependent models do not 
+         * have their inherited properties pruned, and they override the submodels in the concatenation
+         * at the end of this method.
+         * 
+         * In any case, we actually do not want the inherited properties to be pruned. Swagger UI does
+         * not have support for depicting inheritance, so it is better for the inherited properties to 
+         * be listed as belonging to the submodel.
+         
         // subtract fields from base models
         val basePropNames = baseModels.map(_._2.properties.keys).flatten.toSet
         LOGGER.debug("basePropNames: " + basePropNames)
@@ -54,10 +70,9 @@ object ModelInheritenceUtil {
           if(!basePropNames.contains(name)) propertyMap += name -> prop
         }
         submodels += name -> m.copy(properties = propertyMap)
+        */
       }
-      else {
-        submodels += name -> m
-      }
+      submodels += name -> m
     }
     submodels.map(m => (m._1, m._2.copy(baseModel = {
       m._2.baseModel match {

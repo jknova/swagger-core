@@ -103,7 +103,7 @@ class ModelInhertenceUtilTest extends FlatSpec with ShouldMatchers {
     models.size should be (2)
     val cat = models("CatModel")
     cat.baseModel should be(Some("AnimalBaseModel"))
-    cat.properties.size should be (1)
+    cat.properties.size should be (2)
     cat.discriminator should be (None)
 
     val name = cat.properties.head._2
