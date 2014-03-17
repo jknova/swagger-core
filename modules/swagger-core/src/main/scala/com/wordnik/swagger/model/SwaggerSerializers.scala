@@ -69,7 +69,10 @@ object SwaggerSerializers extends Serializers {
       })) ~
       ("extends" -> {
         x.baseModel match {
-          case Some(e) if(e != "void" && e != "java.lang.Void") => Extraction.decompose(e)
+          case Some(e) if(e != "void" && e != "java.lang.Void") => Extraction.decompose(ModelUtil.modelFromString(e) match {
+            case Some(f) => f._1
+            case None => e
+          })
           case _ =>JNothing
         }
       }) ~

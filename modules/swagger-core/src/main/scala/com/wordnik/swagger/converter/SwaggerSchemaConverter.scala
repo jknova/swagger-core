@@ -27,7 +27,7 @@ class SwaggerSchemaConverter
         p.sortWith(_._1 < _._1).foreach(e => sortedProperties += e._2 -> e._3)
 
         val parent = Option(cls.getAnnotation(classOf[ApiModel])) match {
-          case Some(e) => Some(toName(e.parent))
+          case Some(e) => Some(e.parent.getName)
           case _ => None
         }
         val discriminator = {

@@ -23,7 +23,7 @@ import scala.collection.mutable.LinkedHashMap
 class ModelInheritenceTest extends FlatSpec with ShouldMatchers {
   implicit val formats = SwaggerSerializers.formats
 
-  it should "serialize a model with a super class" in {
+  it should "serialize a model with a known super class" in {
     val props = Map(
       "name" -> ModelProperty(
                   `type` = "string",
@@ -40,11 +40,35 @@ class ModelInheritenceTest extends FlatSpec with ShouldMatchers {
       name = "CatModel",
       qualifiedType = "com.super.CatModel",
       description = Some("A cat model"),
-      baseModel = Some("AnimalBaseModel"),
+      baseModel = Some("model.AnimalBaseModel"),
       properties = properties
     )
 
     write(model) should be ("""{"id":"CatModel","description":"A cat model","extends":"AnimalBaseModel","properties":{"name":{"type":"string"},"id":{"type":"integer","format":"int64"}}}""")
+  }
+
+  it should "serialize a model with an unknown super class" in {
+    val props = Map(
+      "name" -> ModelProperty(
+                  `type` = "string",
+                  qualifiedType = "string"),
+      "id" -> ModelProperty(
+                  `type` = "long",
+                  qualifiedType = "long")
+    )
+    val properties = new LinkedHashMap[String, ModelProperty]
+    properties ++= props
+
+    val model = Model(
+      id = "CatModel",
+      name = "CatModel",
+      qualifiedType = "com.super.CatModel",
+      description = Some("A cat model"),
+      baseModel = Some("UnknownAnimal"),
+      properties = properties
+    )
+
+    write(model) should be ("""{"id":"CatModel","description":"A cat model","extends":"UnknownAnimal","properties":{"name":{"type":"string"},"id":{"type":"integer","format":"int64"}}}""")
   }
 
   it should "deserialize a model with a super class" in {
