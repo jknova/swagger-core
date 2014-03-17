@@ -137,20 +137,31 @@ class ModelPropertyParser(cls: Class[_]) (implicit properties: LinkedHashMap[Str
       if (!"void".equals(paramType) && null != paramType && !processedFields.contains(name)) {
         if(!excludedFieldTypes.contains(paramType)) {
           val items = {
+            // Note that this regex will not match maps (since it does not allow for commas inside the square brackets).
+            // Not sure if we want to use the 'items' keyword for maps, anyway. In JSON schema, the 'items' keyword is only
+            // used with arrays. For maps, the appropriate keyword to use is probably 'additionalProperties'. 
             val ComplexTypeMatcher = "([a-zA-Z]*)\\[([a-zA-Z\\.\\-0-9_]*)\\].*".r
             paramType match {
               case ComplexTypeMatcher(containerType, basePart) => {
                 LOGGER.debug("containerType: " + containerType + ", basePart: " + basePart + ", simpleName: " + simpleName)
                 paramType = containerType
                 val ComplexTypeMatcher(t, simpleTypeRef) = simpleName
+                // Note that typeRef variable is never used below, code is unfinished here.
                 val typeRef = {
-                  if(simpleTypeRef.indexOf(",") > 0) // it's a map, use the value only
+                  if(simpleTypeRef.indexOf(",") > 0) // intent is to use the value type if it's a map
                     simpleTypeRef.split(",").last
                   else simpleTypeRef
                 }
                 simpleName = containerType
                 if(isComplex(simpleTypeRef)) {
-                  Some(ModelRef(null, Some(simpleTypeRef), Some(basePart)))
+                  val itemsClass = getElementClass(genericReturnType, returnType)
+                  var itemsAllowableValues = {
+                    if (itemsClass != null && itemsClass.isEnum) 
+                      Some(AllowableListValues((for(v <- itemsClass.getEnumConstants) yield v.toString).toList))
+                    else
+                      None
+                  }
+                  Some(ModelRef(null, Some(simpleTypeRef), Some(basePart), itemsAllowableValues.getOrElse(AnyAllowableValues)))
                 }
                 else Some(ModelRef(simpleTypeRef, None, Some(basePart)))
               }
@@ -374,6 +385,23 @@ class ModelPropertyParser(cls: Class[_]) (implicit properties: LinkedHashMap[Str
         }
       }
     }
+  }
+  
+  def getElementClass(genericReturnType: Type, returnType: Type): Class[_] = {
+    val elementType: Type = {
+      if (TypeUtil.isParameterizedList(genericReturnType) || TypeUtil.isParameterizedSet(genericReturnType)) 
+        genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType].getActualTypeArguments.head
+      else if (TypeUtil.isParameterizedMap(genericReturnType)) 
+        genericReturnType.asInstanceOf[java.lang.reflect.ParameterizedType].getActualTypeArguments()(1)
+      else if (!returnType.getClass.isAssignableFrom(classOf[ParameterizedTypeImpl]) && returnType.isInstanceOf[Class[_]] && returnType.asInstanceOf[Class[_]].isArray) 
+        returnType.asInstanceOf[Class[_]].getComponentType
+      else 
+        null
+    }
+    if (elementType != null && elementType.isInstanceOf[Class[_]]) 
+      elementType.asInstanceOf[Class[_]]
+    else
+      null
   }
 
   def readName(hostClass: Class[_], isSimple: Boolean = true): String = {

@@ -66,7 +66,8 @@ case class ModelProperty(
 case class ModelRef(
   `type`: String,
   ref: Option[String] = None,
-  qualifiedType: Option[String] = None)
+  qualifiedType: Option[String] = None,
+  allowableValues: AllowableValues = AnyAllowableValues)
 
 case class ApiListing (
   apiVersion: String,
