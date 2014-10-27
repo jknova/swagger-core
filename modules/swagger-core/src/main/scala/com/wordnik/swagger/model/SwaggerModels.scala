@@ -52,7 +52,14 @@ case class Model(
   description: Option[String] = None,
   baseModel: Option[String] = None,
   discriminator: Option[String] = None,
-  subTypes: List[String] = List.empty)
+  subTypes: List[String] = List.empty,
+  mapModels: List[MapElement] = List.empty,
+  isMapKeyModel: Boolean = false )
+  
+case class MapElement(
+  name: String,
+  modelPropertyName: String,
+  mapValueModelName: String)
 
 case class ModelProperty(
   `type`: String,
