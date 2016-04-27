@@ -26,12 +26,16 @@ object ModelConverters {
   }
 
   def read(cls: Class[_]): Option[Model] = {
-    var model: Option[Model] = None
-    val itr = converters.iterator
-    while(model == None && itr.hasNext) {
-      model = itr.next.read(cls)
+    if (ModelCache.ClassMem.contains(cls))
+      ModelCache.ClassMem(cls)
+    else {
+      var model: Option[Model] = None
+      val itr = converters.iterator
+      while (model == None && itr.hasNext) {
+        model = itr.next.read(cls)
+      }
+      ModelCache.Memoize(cls, model)
     }
-    model
   }
 
   def readAll(cls: Class[_]): List[Model] = {
