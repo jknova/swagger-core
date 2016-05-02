@@ -52,15 +52,8 @@ case class Model(
   description: Option[String] = None,
   baseModel: Option[String] = None,
   discriminator: Option[String] = None,
-  subTypes: List[String] = List.empty,
-  mapModels: List[MapElement] = List.empty,
-  isMapKeyModel: Boolean = false )
+  subTypes: List[String] = List.empty)
   
-case class MapElement(
-  name: String,
-  modelPropertyName: String,
-  mapValueModelName: String)
-
 case class ModelProperty(
   `type`: String,
   qualifiedType: String,
