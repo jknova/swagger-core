@@ -54,6 +54,11 @@ case class Model(
   discriminator: Option[String] = None,
   subTypes: List[String] = List.empty)
   
+case class MapElement(
+  name: String,
+  modelPropertyName: String,
+  mapValueModelName: String)
+
 case class ModelProperty(
   `type`: String,
   qualifiedType: String,
